@@ -13,6 +13,6 @@ services:
     resource: '../../src/*'
     exclude: '../../src/{DependencyInjection,Entity,Migrations,Tests,Kernel.php,Exception}'
 
-  bazoonchik\CriticalAlertsBundle\Service\:
-    resource: '../../src/Service'
-    public: true
+  #bazoonchik\CriticalAlertsBundle\Service\:
+  #  resource: '../../src/Service'
+  #  public: true
