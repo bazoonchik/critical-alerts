@@ -4,6 +4,7 @@ namespace bazoonchik\CriticalAlertsBundle\DependencyInjection;
 
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Bundle\MonologBundle\DependencyInjection\Configuration as MonologConfiguration;
 
 class Configuration implements ConfigurationInterface
 {
@@ -11,29 +12,29 @@ class Configuration implements ConfigurationInterface
     /**
      * Generates the configuration tree builder.
      *
-     * @return \Symfony\Component\Config\Definition\Builder\TreeBuilder The tree builder
+     * @return TreeBuilder The tree builder
      */
     public function getConfigTreeBuilder()
     {
         $treeBuilder = new TreeBuilder('critical_notifications');
 
-        $treeBuilder->getRootNode()
+        $monologConfiguration = (new MonologConfiguration())->getConfigTreeBuilder();
+        $monologConfiguration->getRootNode()
             ->children()
                 ->arrayNode('handlers')
-                    ->children()
-                        ->arrayNode('telegram')
-                            ->children()
-                                ->arrayNode('log_levels')
-                                    ->scalarPrototype()->end()
-                                ->end()
-                            ->end()
-                        ->end()
-                        ->arrayNode('sentry')
-                            ->children()
-                                ->arrayNode('log_levels')
-                                    ->scalarPrototype()->end()
-                                ->end()
-                            ->end()
+                    ->prototype('array')
+                        ->validate()
+                            ->ifTrue(function ($v) {
+                                return (
+                                    'telegram' === $v['type'] &&
+                                    (
+                                        empty($v['api_key']) ||
+                                        empty($v['channel']) ||
+                                        empty($v['level'])
+                                    )
+                                );
+                            })
+                            ->thenInvalid('The api_key, channel, and log_level of telegram type must be configured.')
                         ->end()
                     ->end()
                 ->end()

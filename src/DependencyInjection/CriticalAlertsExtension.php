@@ -2,6 +2,7 @@
 
 namespace bazoonchik\CriticalAlertsBundle\DependencyInjection;
 
+use bazoonchik\CriticalAlertsBundle\Handler\TelegramHandler;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -9,7 +10,6 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 class CriticalAlertsExtension extends Extension
 {
-
     /**
      * Loads a specific configuration.
      *
@@ -25,17 +25,21 @@ class CriticalAlertsExtension extends Extension
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resource'));
         $loader->load('services.yaml');
 
-        $gorushClientDefaultOptions = [
-            'headers' => [
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ],
-            'base_uri' => $config['gorush_url'],
-            'verify_peer' => $config['verify_peer'],
-            'verify_host' => $config['verify_host']
-        ];
 
-        $container->getDefinition(PushService::class)
-            ->setArgument('$gorushClientDefaultOptions', $gorushClientDefaultOptions);
+        if (isset($config['handlers'])) {
+
+            foreach ($config['handlers'] as $name => $handler) {
+                switch ($handler['type']) {
+                    case 'telegram':
+                        $definition = $container->getDefinition(TelegramHandler::class)
+                            ->setArgument('$apiKey', $handler['api_key'])
+                            ->setArgument('$channel', $handler['channel'])
+                            ->setArgument('$level', $handler['log_level']);
+
+                        $container->setDefinition('monolog.handler' . $handler['type'], $definition);
+                        break;
+                }
+            }
+        }
     }
 }
